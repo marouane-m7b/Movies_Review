@@ -97,4 +97,22 @@ public class UserDAO {
             return false;
         }
     }
+    
+    public static User getUserById(int userId) {
+        String query = "SELECT user_id, username, email, is_admin FROM users WHERE user_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    User user = new User(rs.getInt("user_id"), rs.getString("username"), rs.getString("email"));
+                    user.setAdmin(rs.getBoolean("is_admin"));
+                    return user;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
