@@ -11,7 +11,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @WebServlet("/reviews")
 public class ReviewServlet extends HttpServlet {
@@ -77,11 +83,19 @@ public class ReviewServlet extends HttpServlet {
             sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Please provide a valid Bearer token.");
             return;
         }
+        
+        String body = request.getReader().lines().collect(Collectors.joining());
+        Map<String, String> params = parseFormData(body);
 
-        String reviewIdStr = request.getParameter("review_id");
+        // Get parameters from parsed data
+        String reviewIdStr = params.get("review_id");
+        String ratingStr = params.get("rating");
+        String comment = params.get("comment");
+
+        // String reviewIdStr = request.getParameter("review_id");
         int userId = AuthUtils.getUserId(request);
-        String ratingStr = request.getParameter("rating");
-        String comment = request.getParameter("comment");
+        // String ratingStr = request.getParameter("rating");
+        // String comment = request.getParameter("comment");
 
         if (reviewIdStr == null || !reviewIdStr.matches("\\d+")) {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid review_id is required.");
@@ -147,5 +161,25 @@ public class ReviewServlet extends HttpServlet {
         response.setStatus(status);
         String jsonResponse = gson.toJson(new ErrorResponse("error", message));
         response.getWriter().write(jsonResponse);
+    }
+    
+    private Map<String, String> parseFormData(String formData) {
+        Map<String, String> params = new HashMap<>();
+        if (formData == null) return params;
+
+        String[] pairs = formData.split("&");
+        for (String pair : pairs) {
+            String[] keyValue = pair.split("=");
+            if (keyValue.length == 2) {
+                try {
+                    String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8.name());
+                    String value = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.name());
+                    params.put(key, value);
+                } catch (UnsupportedEncodingException e) {
+                    // Handle encoding exception
+                }
+            }
+        }
+        return params;
     }
 }

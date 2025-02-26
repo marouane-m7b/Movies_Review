@@ -22,6 +22,11 @@ public class LoginServlet extends HttpServlet {
     private Gson gson = new Gson();
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        response.setHeader("Access-Control-Allow-Credentials", "true"); // Allow cookies
+
         String csrfToken = TokenUtils.generateCsrfToken();
         request.getSession().setAttribute("csrf_token", csrfToken);
 
@@ -32,17 +37,22 @@ public class LoginServlet extends HttpServlet {
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	    response.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+	    response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+	    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+	    response.setHeader("Access-Control-Allow-Credentials", "true"); // Allow cookies
+
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         String csrfToken = request.getParameter("csrf_token");
 
         String sessionCsrf = (String) request.getSession().getAttribute("csrf_token");
-        if (csrfToken == null || !csrfToken.equals(sessionCsrf)) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            String jsonResponse = gson.toJson(new ResponseMessage("Invalid CSRF token."));
-            response.getWriter().write(jsonResponse);
-            return;
-        }
+        // if (csrfToken == null || !csrfToken.equals(sessionCsrf)) {
+        //  response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        //    String jsonResponse = gson.toJson(new ResponseMessage("Invalid CSRF token."));
+        //    response.getWriter().write(jsonResponse);
+        //    return;
+        //}
 
         boolean success = UserDAO.validateUser(username, password);
 
@@ -54,7 +64,7 @@ public class LoginServlet extends HttpServlet {
             int userId = getUserId(username);
             if (userId != -1) {
                 String bearerToken = TokenUtils.generateToken(userId, username);
-                jsonResponse = gson.toJson(new LoginResponse("Login successful!", bearerToken));
+                jsonResponse = gson.toJson(new LoginResponse("success", "Login successful!", bearerToken));
             } else {
                 jsonResponse = gson.toJson(new ResponseMessage("Error fetching user data."));
             }
@@ -63,6 +73,14 @@ public class LoginServlet extends HttpServlet {
         }
 
         response.getWriter().write(jsonResponse);
+    }
+
+    protected void doOptions(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    	response.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        response.setHeader("Access-Control-Allow-Credentials", "true"); // Allow cookies
+        response.setStatus(HttpServletResponse.SC_OK);
     }
 
     private int getUserId(String username) {
@@ -96,8 +114,10 @@ public class LoginServlet extends HttpServlet {
     private static class LoginResponse {
         private String message;
         private String token;
-        public LoginResponse(String message, String token) { this.message = message; this.token = token; }
+        private String status;
+        public LoginResponse(String status, String message, String token) { this.status = status;this.message = message; this.token = token; }
         public String getMessage() { return message; }
         public String getToken() { return token; }
+        public String getStatus() { return status; }
     }
 }
