@@ -30,24 +30,56 @@ public class MovieDAO {
 
     public static List<Movie> getAllMovies() {
         List<Movie> movies = new ArrayList<>();
-        String query = "SELECT * FROM movies";
+        List<Integer> movieIds = new ArrayList<>();
+        String sql = "SELECT movie_id, title, description, release_year, genre, image_uri FROM movies";
+        
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
+             PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
+            
+            System.out.println("Fetching all movies...");
+            int count = 0;
+            
+            // First, collect all movie data without calling other DAOs
             while (rs.next()) {
-                Movie movie = new Movie(
-                    rs.getString("title"),
-                    rs.getString("description"),
-                    rs.getInt("release_year"),
-                    rs.getString("genre"),
-                    rs.getString("image_uri")
-                );
-                movie.setMovieId(rs.getInt("movie_id"));
+                count++;
+                int movieId = rs.getInt("movie_id");
+                String title = rs.getString("title");
+                String description = rs.getString("description");
+                int releaseYear = rs.getInt("release_year");
+                String genre = rs.getString("genre");
+                String imageUri = rs.getString("image_uri");
+                
+                // Create movie without rating info for now
+                Movie movie = new Movie(movieId, title, description, releaseYear, genre, imageUri, 0.0, 0);
                 movies.add(movie);
+                movieIds.add(movieId);
+                
+                System.out.println("Added movie: " + title);
             }
-        } catch (SQLException e) {
+            
+            System.out.println("Total movies fetched: " + count);
+        } catch (Exception e) {
             e.printStackTrace();
+            return movies; // Return what we have so far if there's an error
         }
+        
+        // Now fetch rating info for all movies after the ResultSet is closed
+        for (int i = 0; i < movies.size(); i++) {
+            Movie movie = movies.get(i);
+            int movieId = movieIds.get(i);
+            
+            try {
+                ReviewDAO.RatingInfo ratingInfo = ReviewDAO.getRatingInfo(movieId);
+                // Update the movie with rating information
+                movie.setAverageRating(ratingInfo.averageRating);
+                movie.setReviewCount(ratingInfo.reviewCount);
+            } catch (Exception e) {
+                System.out.println("Error fetching rating for movie ID " + movieId + ": " + e.getMessage());
+                // Continue processing other movies even if one fails
+            }
+        }
+        
         return movies;
     }
 

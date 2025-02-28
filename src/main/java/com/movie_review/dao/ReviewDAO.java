@@ -107,4 +107,31 @@ public class ReviewDAO {
         }
         return null;
     }
+    
+    public static class RatingInfo {
+        public double averageRating;
+        public int reviewCount;
+
+        public RatingInfo(double averageRating, int reviewCount) {
+            this.averageRating = averageRating;
+            this.reviewCount = reviewCount;
+        }
+    }
+
+    public static RatingInfo getRatingInfo(int movieId) {
+        String sql = "SELECT AVG(rating) AS avg_rating, COUNT(*) AS review_count FROM reviews WHERE movie_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, movieId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                double avgRating = rs.getDouble("avg_rating");
+                int reviewCount = rs.getInt("review_count");
+                return new RatingInfo(avgRating, reviewCount);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new RatingInfo(0.0, 0); // Default if no reviews
+    }
 }

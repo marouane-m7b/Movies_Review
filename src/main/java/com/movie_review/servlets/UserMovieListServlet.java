@@ -2,8 +2,8 @@ package com.movie_review.servlets;
 
 import com.google.gson.Gson;
 import com.movie_review.dao.UserMovieListDAO;
-import com.movie_review.models.Movie; // Add this import
-import com.movie_review.utils.AuthUtils; // Ensure this import is correct
+import com.movie_review.models.Movie;
+import com.movie_review.utils.AuthUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -27,7 +27,7 @@ public class UserMovieListServlet extends HttpServlet {
         int userId = AuthUtils.getUserId(request);
         String listType = request.getParameter("type");
         if (listType == null || !isValidListType(listType)) {
-            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid list type (watchlist, watched, dropped) is required.");
+            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid list type (watchlist, watched, dropped, favorites) is required.");
             return;
         }
 
@@ -54,7 +54,7 @@ public class UserMovieListServlet extends HttpServlet {
             return;
         }
         if (listType == null || !isValidListType(listType)) {
-            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid list type (watchlist, watched, dropped) is required.");
+            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid list type (watchlist, watched, dropped, favorites) is required.");
             return;
         }
 
@@ -87,7 +87,7 @@ public class UserMovieListServlet extends HttpServlet {
             return;
         }
         if (listType == null || !isValidListType(listType)) {
-            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid list type (watchlist, watched, dropped) is required.");
+            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid list type (watchlist, watched, dropped, favorites) is required.");
             return;
         }
 
@@ -105,7 +105,7 @@ public class UserMovieListServlet extends HttpServlet {
     }
 
     private boolean isValidListType(String listType) {
-        return "watchlist".equals(listType) || "watched".equals(listType) || "dropped".equals(listType);
+        return "watchlist".equals(listType) || "watched".equals(listType) || "dropped".equals(listType) || "favorites".equals(listType);
     }
 
     private static class SuccessResponse {
