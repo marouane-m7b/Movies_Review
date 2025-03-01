@@ -6,12 +6,12 @@ public class Review {
     private int reviewId;
     private int movieId;
     private int userId;
-    private int rating;
+    private float rating;
     private String comment;
     private Timestamp reviewDate;
 
     // Constructor
-    public Review(int movieId, int userId, int rating, String comment) {
+    public Review(int movieId, int userId, float rating, String comment) {
         this.movieId = movieId;
         this.userId = userId;
         this.rating = rating;
@@ -43,11 +43,11 @@ public class Review {
         this.userId = userId;
     }
 
-    public int getRating() {
+    public float getRating() {
         return rating;
     }
 
-    public void setRating(int rating) {
+    public void setRating(float rating) {
         this.rating = rating;
     }
 

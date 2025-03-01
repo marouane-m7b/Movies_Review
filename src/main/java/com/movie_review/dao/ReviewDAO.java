@@ -13,13 +13,13 @@ import java.util.List;
 public class ReviewDAO {
 
     // Add a new review
-    public static boolean addReview(Review review) {
+	public static boolean addReview(Review review) {
         String query = "INSERT INTO reviews (movie_id, user_id, rating, comment) VALUES (?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, review.getMovieId());
             stmt.setInt(2, review.getUserId());
-            stmt.setInt(3, review.getRating());
+            stmt.setFloat(3, review.getRating()); // Changed to setFloat
             stmt.setString(4, review.getComment());
             int rowsInserted = stmt.executeUpdate();
             return rowsInserted > 0;
@@ -30,7 +30,7 @@ public class ReviewDAO {
     }
 
     // Get all reviews for a specific movie
-    public static List<ReviewWithUsername> getReviewsByMovieId(int movieId) {
+	public static List<ReviewWithUsername> getReviewsByMovieId(int movieId) {
         List<ReviewWithUsername> reviews = new ArrayList<>();
         String query = "SELECT r.*, u.username FROM reviews r JOIN users u ON r.user_id = u.user_id WHERE r.movie_id = ? ORDER BY r.review_date DESC";
         try (Connection conn = DBConnection.getConnection();
@@ -41,7 +41,7 @@ public class ReviewDAO {
                     ReviewWithUsername review = new ReviewWithUsername(
                         rs.getInt("movie_id"),
                         rs.getInt("user_id"),
-                        rs.getInt("rating"),
+                        rs.getFloat("rating"), // Changed to getFloat
                         rs.getString("comment"),
                         rs.getString("username")
                     );
@@ -55,11 +55,12 @@ public class ReviewDAO {
         }
         return reviews;
     }
-
+    
+    
     public static class ReviewWithUsername extends Review {
         private String username;
 
-        public ReviewWithUsername(int movieId, int userId, int rating, String comment, String username) {
+        public ReviewWithUsername(int movieId, int userId, float rating, String comment, String username) { // Updated parameter type
             super(movieId, userId, rating, comment);
             this.username = username;
         }
@@ -68,11 +69,11 @@ public class ReviewDAO {
         public void setUsername(String username) { this.username = username; }
     }
     
-    public static boolean updateReview(int reviewId, int userId, int rating, String comment) {
+    public static boolean updateReview(int reviewId, int userId, float rating, String comment) { // Updated parameter type
         String query = "UPDATE reviews SET rating = ?, comment = ? WHERE review_id = ? AND user_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, rating);
+            stmt.setFloat(1, rating); // Changed to setFloat
             stmt.setString(2, comment);
             stmt.setInt(3, reviewId);
             stmt.setInt(4, userId);
@@ -83,8 +84,22 @@ public class ReviewDAO {
             return false;
         }
     }
+    
+    public static boolean deleteReview(int reviewId, int userId) {
+        String query = "DELETE FROM reviews WHERE review_id = ? AND user_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, reviewId);
+            stmt.setInt(2, userId);
+            int rowsDeleted = stmt.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
-    public static Review getReviewById(int reviewId) {
+	public static Review getReviewById(int reviewId) {
         String query = "SELECT * FROM reviews WHERE review_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -94,7 +109,7 @@ public class ReviewDAO {
                     Review review = new Review(
                         rs.getInt("movie_id"),
                         rs.getInt("user_id"),
-                        rs.getInt("rating"),
+                        rs.getFloat("rating"), // Changed to getFloat
                         rs.getString("comment")
                     );
                     review.setReviewId(rs.getInt("review_id"));
@@ -108,6 +123,7 @@ public class ReviewDAO {
         return null;
     }
     
+	// Update getRatingInfo
     public static class RatingInfo {
         public double averageRating;
         public int reviewCount;
@@ -132,6 +148,6 @@ public class ReviewDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new RatingInfo(0.0, 0); // Default if no reviews
+        return new RatingInfo(0.0, 0);
     }
 }

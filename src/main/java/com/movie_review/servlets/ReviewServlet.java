@@ -39,7 +39,7 @@ public class ReviewServlet extends HttpServlet {
         response.getWriter().write(jsonResponse);
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         if (!AuthUtils.isAuthenticated(request)) {
             sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Please provide a valid Bearer token.");
             return;
@@ -54,11 +54,11 @@ public class ReviewServlet extends HttpServlet {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid movie_id is required.");
             return;
         }
-        if (ratingStr == null || !ratingStr.matches("\\d+")) {
-            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Rating must be a number.");
+        if (ratingStr == null || !ratingStr.matches("\\d+(\\.5)?")) { // Allow decimals ending in .5
+            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Rating must be a number between 1 and 5, optionally with .5.");
             return;
         }
-        int rating = Integer.parseInt(ratingStr);
+        float rating = Float.parseFloat(ratingStr);
         if (rating < 1 || rating > 5) {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Rating must be between 1 and 5.");
             return;
@@ -83,31 +83,27 @@ public class ReviewServlet extends HttpServlet {
             sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Please provide a valid Bearer token.");
             return;
         }
-        
+
         String body = request.getReader().lines().collect(Collectors.joining());
         Map<String, String> params = parseFormData(body);
 
-        // Get parameters from parsed data
         String reviewIdStr = params.get("review_id");
         String ratingStr = params.get("rating");
         String comment = params.get("comment");
 
-        // String reviewIdStr = request.getParameter("review_id");
         int userId = AuthUtils.getUserId(request);
-        // String ratingStr = request.getParameter("rating");
-        // String comment = request.getParameter("comment");
 
         if (reviewIdStr == null || !reviewIdStr.matches("\\d+")) {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid review_id is required.");
             return;
         }
-        if (ratingStr == null || !ratingStr.matches("\\d+")) {
-            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Rating must be a number.");
+        if (ratingStr == null || !ratingStr.matches("\\d+(\\.5)?")) { // Allow decimals ending in .5
+            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Rating must be a number between 0 and 5, optionally with .5.");
             return;
         }
-        int rating = Integer.parseInt(ratingStr);
-        if (rating < 1 || rating > 5) {
-            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Rating must be between 1 and 5.");
+        float rating = Float.parseFloat(ratingStr);
+        if (rating < 0 || rating > 5) {
+            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Rating must be between 0 and 5.");
             return;
         }
 
@@ -130,6 +126,38 @@ public class ReviewServlet extends HttpServlet {
         }
     }
 
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (!AuthUtils.isAuthenticated(request)) {
+            sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Please provide a valid Bearer token.");
+            return;
+        }
+
+        String reviewIdStr = request.getParameter("review_id");
+        int userId = AuthUtils.getUserId(request);
+
+        if (reviewIdStr == null || !reviewIdStr.matches("\\d+")) {
+            sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Valid review_id is required.");
+            return;
+        }
+
+        int reviewId = Integer.parseInt(reviewIdStr);
+        Review existingReview = ReviewDAO.getReviewById(reviewId);
+        if (existingReview == null || existingReview.getUserId() != userId) {
+            sendError(response, HttpServletResponse.SC_FORBIDDEN, "You can only delete your own reviews.");
+            return;
+        }
+
+        boolean success = ReviewDAO.deleteReview(reviewId, userId);
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        if (success) {
+            String jsonResponse = gson.toJson(new SuccessResponse("success", "Review deleted successfully!", null));
+            response.getWriter().write(jsonResponse);
+        } else {
+            sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to delete review.");
+        }
+    }
     private static class SuccessResponse {
         private String status;
         private String message;
